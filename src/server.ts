@@ -14,25 +14,37 @@ app.get("/movies", async (_, res) => {
 });
 
 app.post("/movies", async (req, res) => {
-
    const { title, genre_id, language_id, oscar_count, release_date } = req.body;
-
+  
    try {
-      await prisma.movie.create({
-         data: {
-            title: title,
-            genre_id: genre_id,
-            language_id: language_id,
-            oscar_count: oscar_count,
-            release_date: new Date(release_date),
-         },
-      });
+  
+      const movieWithSameTitle = await prisma.movie.findFirst({
+         where: { 
+             title: { equals: title, mode: "insensitive" }
+         }, 
+     });
+  
+     if (movieWithSameTitle) {
+        return res
+          .status(409)
+          .send({ message: "Já existe um filme com esse título" });
+     }
+  
+     await prisma.movie.create({
+       data: {
+         title,
+         genre_id,
+         language_id,
+         oscar_count,
+         release_date: new Date(release_date),
+       },
+     });
    } catch (error) {
-      return res.status(500).send({ message: "Falha ao cadastrar um filme" });
+     return res.status(500).send({ message: "Falha ao cadastrar um filme" });
    }
-
+  
    res.status(201).send();
-});
+  });
 
 app.listen(port, () => {
    console.log(`Servidor em execução em http://localhost:${port}`);
